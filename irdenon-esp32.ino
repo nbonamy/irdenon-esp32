@@ -5,59 +5,13 @@
 #include <WiFi.h>
 #include <WebServer.h>
 #include <ESPmDNS.h>
-#include "credentials.h"
+#include "config.h"
 #include "ircodes.h"
-//#include "nvs_flash.h"
-
-// #include <WiFiClient.h>
-// #include <HTTPClient.h>
-// #include <PubSubClient.h>
-// const char* MQTT_BROKER = "192.168.178.200";
-// WiFiClient espClient;
-// PubSubClient client(espClient);
 
 IRsend irsend(4); // D2
 WebServer server(80);
+File fsUploadFile;
 int wifiConnected = 0;
-
-// const char index_html[] PROGMEM = R"rawliteral(
-// <!DOCTYPE html>
-// <html>
-// <head>
-//   <title>Denon IR</title>
-//   <style>
-//     button { font-size: 4em; margin: 11px; width: 45%; height: 256px; }
-//     .btnRed { background-color: #4C0000; color: white; }
-//     .btnGreen { background-color: #004C00; color: white; }
-//     .btnBlue { background-color: #00004C; color: white; }
-//     .btnViolet { background-color: #4C004C; color: white; width: 30%; }
-//   </style>
-//   <script src="http://code.jquery.com/jquery-1.11.0.min.js"></script>
-//   <script type="text/javascript">
-//     function sendVal(newVal){
-//       $.ajax({
-//         url: "/api/do?action="+newVal,
-//         type: "GET"
-//       });
-//     }
-//   </script>
-// </head>
-// <body>
-//   <button onclick="sendVal(this.value)" value="PWON" class="btnRed">PWON</button>
-//   <button onclick="sendVal(this.value)" value="PWOFF" class="btnGreen">PWOFF</button>
-//   <br>
-//   <button onclick="sendVal(this.value)" value="VOLDOWN">VOLDOWN</button>
-//   <button onclick="sendVal(this.value)" value="VOLUP">VOLUP</button>
-//   <br>
-//   <button onclick="sendVal(this.value)" value="DVD" class="btnViolet">DVD</button>
-//   <button onclick="sendVal(this.value)" value="TV" class="btnViolet">TV</button>
-//   <button onclick="sendVal(this.value)" value="VCR" class="btnViolet">VCR</button>
-//   <br>
-//   <button onclick="sendVal(this.value)" value="MUTE">MUTE</button>
-//   <button onclick="sendVal(this.value)" value="NIGHT">NIGHT</button>
-// </body>
-// </html>
-// )rawliteral";
 
 void send(uint16_t buf[])
 {
@@ -154,6 +108,41 @@ bool handleFileRead(String path) {
   return true;
 }
 
+void handleFileUpload() {
+  if (server.uri() != "/api/upload") {
+    return;
+  }
+  HTTPUpload& upload = server.upload();
+  if (upload.status == UPLOAD_FILE_START) {
+    
+    // get filename
+    String filename = upload.filename;
+    if (!filename.startsWith("/")) {
+      filename = "/" + filename;
+    }
+    // log
+    Serial.print("[HTTP] Upload name: ");
+    Serial.println(filename);
+
+    // start
+    fsUploadFile = SPIFFS.open(filename, "w");
+    filename = String();
+
+  } else if (upload.status == UPLOAD_FILE_WRITE) {
+    //Serial.print("handleFileUpload Data: ");
+    //Serial.println(upload.currentSize);
+    if (fsUploadFile) {
+      fsUploadFile.write(upload.buf, upload.currentSize);
+    }
+  } else if (upload.status == UPLOAD_FILE_END) {
+    if (fsUploadFile) {
+      fsUploadFile.close();
+    }
+    Serial.print("[HTTP] Upload completed. Bytes: ");
+    Serial.println(upload.totalSize);
+  }
+}
+
 void handleApiDo()
 {
   // check action button
@@ -180,56 +169,6 @@ void handleApiDo()
   server.send(200, getContentType("dummy.json"), "{ \"status\": \"ok\" }");
 
 }
-
-/*void mqtt(char* topic, byte* payload, unsigned int length) {
-    Serial.print("Received mqtt [");
-    Serial.print(topic);
-    Serial.print("] ");
-    char msg[length+1];
-    for (int i = 0; i < length; i++) {
-        Serial.print((char)payload[i]);
-        msg[i] = (char)payload[i];
-    }
-    Serial.println();
-
-    msg[length] = '\0';
-    Serial.println(msg);
-
-    if(strcmp(msg,"on")==0){
-        send(PWON);
-    }
-    else if(strcmp(msg,"off")==0){
-        send(PWOFF);
-    }
-    else if(strcmp(msg,"mute")==0){
-        Serial.println("IR mute");
-        send(MUTE);
-    }
-    else if(strcmp(msg,"volup")==0){
-        Serial.println("IR volup");
-        sendMulti(DENON_VOL_REPEAT,VOLUP);
-    }
-    else if(strcmp(msg,"voldown")==0){
-        Serial.println("IR voldown");
-        sendMulti(DENON_VOL_REPEAT,VOLDOWN);
-    }
-    else if(strcmp(msg,"dvd")==0){
-        Serial.println("IR dvd");
-        sendMulti(DENON_VOL_REPEAT,DVD);
-    }
-    else if(strcmp(msg,"tv")==0){
-        Serial.println("IR tv");
-        sendMulti(DENON_VOL_REPEAT,TV);
-    }
-    else if(strcmp(msg,"vcr")==0){
-        Serial.println("IR vcr");
-        sendMulti(DENON_VOL_REPEAT,VCR);
-    }
-    else if(strcmp(msg,"night")==0){
-        Serial.println("IR night");
-        sendMulti(DENON_VOL_REPEAT,NIGHT);
-    }
-}*/
 
 void onWiFiDisconnect(WiFiEvent_t event, WiFiEventInfo_t info)
 {
@@ -326,10 +265,8 @@ void connectWifi()
 
 void setup()
 {
-  // clear all stuff
+  // clear output
   Serial.println("");
-  //ESP_ERROR_CHECK(nvs_flash_erase());
-  //nvs_flash_init();
 
   // serial stuff
   pinMode(LED_BUILTIN, OUTPUT);
@@ -354,15 +291,12 @@ void setup()
     }
   #endif
 
-  // setup mqtt
-  // client.setServer(MQTT_BROKER, 1883);
-  // client.setCallback(mqtt);
-  // Serial.print("mqtt broker: ");
-  // Serial.println(MQTT_BROKER);
-
   // configure server
   Serial.println("[HTTP] Starting webserver");
   server.on("/api/do", handleApiDo);
+  server.on("/api/upload", HTTP_POST, []() {
+    server.send(200, "text/plain", "");
+  }, handleFileUpload);
   server.onNotFound([]() {
     if (!handleFileRead(server.uri())) {
       server.send(404, "text/plain", "404 Not Found");
@@ -370,22 +304,7 @@ void setup()
   });  server.begin();
 }
 
-/*void reconnect() {
-    while (!client.connected()) {
-        Serial.println("Reconnecting MQTT...");
-        if (!client.connect("ESP-Denon")) {
-            Serial.print("failed, rc=");
-            Serial.print(client.state());
-            Serial.println(" retrying in 5 seconds");
-            delay(5000);
-        }
-    }
-    client.subscribe("/home/denon");
-    Serial.println("MQTT Connected...");
-}*/
-
 void loop()
 {
-  // Serial.print(".");
   server.handleClient();
 }

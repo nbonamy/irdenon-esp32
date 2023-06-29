@@ -1,0 +1,27 @@
+button {
+  font-size: 4em;
+  margin: 11px;
+  width: 45%;
+  height: 256px;
+}
+
+.btnRed {
+  background-color: #4C0000;
+  color: white;
+}
+
+.btnGreen {
+  background-color: #004C00;
+  color: white;
+}
+
+.btnBlue {
+  background-color: #00004C;
+  color: white;
+}
+
+.btnViolet {
+  background-color: #4C004C;
+  color: white;
+  width: 30%;
+}

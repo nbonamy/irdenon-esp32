@@ -28,18 +28,37 @@ https://github.com/crankyoldgit/IRremoteESP32/wiki#ir-sending
 - Copy `config.h.sample` to `config.h` and edit the SSID and password for your WiFi.
 - You can also set a static IP (using `WIFI_IP` / `WIFI_GW` / `WIFI_MK`)
 - You can also enable/disable the mDNS name (by default irdenon, comment to disable)
-
-Upload the INO file to the ESP32.
-Upload the SPIFFS data to ESP32 (required Arduino 1.0 and https://github.com/me-no-dev/arduino-esp32fs-plugin)
+- Upload the INO file to the ESP32
+- Upload the SPIFFS data to ESP32 (requires Arduino 1.0 and https://github.com/me-no-dev/arduino-esp32fs-plugin). Alternatively you can upload content manually (see Content update).
 
 You can get the IP address of the ESP32 from the serial output or from your router. If you configured mDNS, you should be able to use irdenon.local for instance.
 
 You can also send command directly through the API:
 ```http://irdenon.local/api/do?action=PWON```
 
+## Content update
+
+You can update contents without recompiling and restarting ESP32. This is valid for:
+- HTML page (index.html)
+- CSS styles (styles.css)
+
+To upload the whole data folder:
+
+```
+cd data
+for file in *; do curl -F "file=@$file" irdenon.local/api/upload; done
+```
+
+To upload a single file:
+
+```
+curl -F "file=@index.html" irdenon.local/api/upload
+```
 
 ## IR Codes
 
 You can test the IR led by looking at it with any phone camera, or by replacing the IR led with a normal led. It should blink when you use the web interface.
 
 Currently only the basic functions implemented, but other codes can easly be read with a IR receiver diode, see for example here: https://github.com/crankyoldgit/IRremoteESP32/wiki#ir-receiving.
+
+Also check https://github.com/aamarioneta/IRDenon/issues/4.
