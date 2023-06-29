@@ -39,8 +39,8 @@ You can also send command directly through the API:
 ## Content update
 
 You can update contents without recompiling and restarting ESP32. This is valid for:
-- HTML page (index.html)
-- CSS styles (styles.css)
+- HTML page (`index.html`)
+- CSS styles (`styles.css`)
 
 To upload the whole data folder:
 
