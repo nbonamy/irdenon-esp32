@@ -1,0 +1,7 @@
+
+#define WIFI_SSID "WIFI_NAME"
+#define WIFI_PSK  "WIFI_PASSWORD"
+// #define WIFI_IP   IPAddress(192,168,1,15)
+// #define WIFI_GW   IPAddress(192,168,1,1)
+// #define WIFI_MK   IPAddress(255,255,255,0)
+#define MDNS_HOST "irdenon"

@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Denon IR</title>
+  <style>
+    button { font-size: 4em; margin: 11px; width: 45%; height: 256px; }
+    .btnRed { background-color: #4C0000; color: white; }
+    .btnGreen { background-color: #004C00; color: white; }
+    .btnBlue { background-color: #00004C; color: white; }
+    .btnViolet { background-color: #4C004C; color: white; width: 30%; }
+  </style>
+  <script src="http://code.jquery.com/jquery-1.11.0.min.js"></script>
+  <script type="text/javascript">
+    function sendVal(newVal){
+      $.ajax({
+        url: "/api/do?action="+newVal,
+        type: "GET"
+      });
+    }
+  </script>
+</head>
+<body>
+  <button onclick="sendVal(this.value)" value="PWON" class="btnRed">PWON</button>
+  <button onclick="sendVal(this.value)" value="PWOFF" class="btnGreen">PWOFF</button>
+  <br>
+  <button onclick="sendVal(this.value)" value="VOLDOWN">VOLDOWN</button>
+  <button onclick="sendVal(this.value)" value="VOLUP">VOLUP</button>
+  <br>
+  <button onclick="sendVal(this.value)" value="DVD" class="btnViolet">DVD</button>
+  <button onclick="sendVal(this.value)" value="TV" class="btnViolet">TV</button>
+  <button onclick="sendVal(this.value)" value="VCR" class="btnViolet">VCR</button>
+  <br>
+  <button onclick="sendVal(this.value)" value="MUTE">MUTE</button>
+  <button onclick="sendVal(this.value)" value="NIGHT">NIGHT</button>
+</body>
+</html>
