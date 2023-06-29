@@ -27,11 +27,11 @@ https://github.com/crankyoldgit/IRremoteESP32/wiki#ir-sending
 
 - Copy `config.h.sample` to `config.h` and edit the SSID and password for your WiFi.
 - You can also set a static IP (using `WIFI_IP` / `WIFI_GW` / `WIFI_MK`)
-- You can also enable/disable the mDNS name (by default irdenon, comment to disable)
+- You can also enable/disable the mDNS name (by default `irdenon`, comment to disable)
 - Upload the INO file to the ESP32
 - Upload the SPIFFS data to ESP32 (requires Arduino 1.0 and https://github.com/me-no-dev/arduino-esp32fs-plugin). Alternatively you can upload content manually (see Content update).
 
-You can get the IP address of the ESP32 from the serial output or from your router. If you configured mDNS, you should be able to use irdenon.local for instance.
+You can get the IP address of the ESP32 from the serial output or from your router. If you configured mDNS, you should be able to use `irdenon.local` to access your ESP32.
 
 You can also send command directly through the API:
 ```http://irdenon.local/api/do?action=PWON```
