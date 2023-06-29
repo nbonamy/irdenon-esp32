@@ -19,7 +19,7 @@ There are 4 ways to remote control older Denon AVR's (in my case Denon AVR 2308)
 ### Hardware 
 
 - For controlling a IR led (3) connect the NPN transistor and IR led as described here:
-https://github.com/crankyoldgit/IRremoteESP32/wiki#ir-sending
+https://github.com/crankyoldgit/IRremoteESP8266/wiki#ir-sending
 - For controlling direct the "Room to Room" "REMOTE CONTROL": connect a 2 wire cable with a mono jack to ground and D2 on the ESP32. You can also use a mono headphone cable or a stereo headphone cable (just connect the 2 channels together).
 ![remote jack](images/IMG_20200223_090247_1.jpg)
 
