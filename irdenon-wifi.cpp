@@ -5,11 +5,12 @@
 #include "config.h"
 
 int wifiConnected = 0;
+int timeout = 3*60000;
 
 void onWiFiDisconnect(WiFiEvent_t event, WiFiEventInfo_t info)
 {
   if (wifiConnected == 1) {
-    Serial.println("[WiFi] Disconnected! Reconnecting");
+    Serial.println("[WIFI] Disconnected! Reconnecting");
   }
 }
 
@@ -17,7 +18,7 @@ void onWiFiGotIP(WiFiEvent_t event, WiFiEventInfo_t info)
 {
   // log
   Serial.println("");
-  Serial.print("[WiFi] Connected with IP address: ");
+  Serial.print("[WIFI] Connected with IP address: ");
   Serial.println(IPAddress(info.got_ip.ip_info.ip.addr));
 
   // mdns
@@ -36,7 +37,7 @@ void onWiFiGotIP(WiFiEvent_t event, WiFiEventInfo_t info)
 void connectWifi()
 {
   // reset
-  Serial.println("[WiFi] Resetting");
+  Serial.println("[WIFI] Resetting");
   wifiConnected = 0;
   WiFi.disconnect(false, true);
   //WiFi.setAutoReconnect(false);
@@ -44,19 +45,20 @@ void connectWifi()
   WiFi.mode(WIFI_STA);
 
   // log
-  Serial.print("[WiFi] MAC Address: ");
+  Serial.print("[WIFI] MAC Address: ");
   Serial.println(WiFi.macAddress());
 
   // configure static stuff
   #ifdef WIFI_IP
-    Serial.print("[WiFi] Configuring static IP: ");
+    Serial.print("[WIFI] Configuring static IP: ");
     Serial.println(WIFI_IP);
     WiFi.config(WIFI_IP, WIFI_GW, WIFI_MK);
   #endif
 
   // log
-  Serial.print("[WiFi] Connecting to SSID: ");
+  Serial.print("[WIFI] Connecting to SSID: ");
   Serial.println(WIFI_SSID);
+  Serial.print("[WIFI] Status: ");
 
   // some events
   WiFi.onEvent(onWiFiDisconnect, WiFiEvent_t::ARDUINO_EVENT_WIFI_STA_DISCONNECTED);
@@ -96,9 +98,9 @@ void connectWifi()
     }
 
     // expired?
-    if (millis() - start > 3*60000) {
+    if (millis() - start > timeout) {
       Serial.println("");
-      Serial.println("[WiFi] Waited too long. Restarting ESP32");
+      Serial.println("[WIFI] Waited too long. Restarting ESP32");
       WiFi.disconnect();
       ESP.restart();
     }

@@ -5,6 +5,7 @@
 
 WebServer server(80);
 File fsUploadFile;
+bool isIrFileUploaded;
 
 bool handleFileRead(String path);
 void handleFileUpload();
@@ -74,7 +75,7 @@ String getContentType(String filename) {
 
 bool exists(String path){
   bool yes = false;
-  File file = SPIFFS.open(path, "r");
+  File file = SPIFFS.open(path, FILE_READ);
   if(!file.isDirectory()){
     yes = true;
   }
@@ -101,7 +102,7 @@ bool handleFileRead(String path) {
   }
 
   // now serve
-  File file = SPIFFS.open(path, "r");
+  File file = SPIFFS.open(path, FILE_READ);
   server.streamFile(file, getContentType(path));
   file.close();
   return true;
@@ -120,25 +121,34 @@ void handleFileUpload() {
       filename = "/" + filename;
     }
     // log
-    Serial.print("[HTTP] Upload name: ");
+    Serial.print("[HTTP] Upload started: ");
     Serial.println(filename);
 
     // start
-    fsUploadFile = SPIFFS.open(filename, "w");
-    filename = String();
+    fsUploadFile = SPIFFS.open(filename, FILE_WRITE);
+
+    // ir file?
+    isIrFileUploaded = (filename == "/ircodes.json");
 
   } else if (upload.status == UPLOAD_FILE_WRITE) {
-    //Serial.print("handleFileUpload Data: ");
-    //Serial.println(upload.currentSize);
     if (fsUploadFile) {
       fsUploadFile.write(upload.buf, upload.currentSize);
     }
   } else if (upload.status == UPLOAD_FILE_END) {
+
+    // close
     if (fsUploadFile) {
       fsUploadFile.close();
     }
+
+    // log
     Serial.print("[HTTP] Upload completed. Bytes: ");
     Serial.println(upload.totalSize);
+
+    // reload ir
+    if (isIrFileUploaded) {
+      loadIr();
+    }
   }
 }
 

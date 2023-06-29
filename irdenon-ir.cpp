@@ -1,13 +1,14 @@
 #include <Arduino.h>
-#include "irdenon-ir.h"
+#include <ArduinoJson.h>
+#include <SPIFFS.h>
 #include <IRremoteESP8266.h>
 #include <IRsend.h>
-#include "ircodes.h"
+#include "irdenon-ir.h"
 
 IRsend irsend(4); // D2
+DynamicJsonDocument irCodes(32768);
 
-void send(uint16_t buf[]);
-void sendMulti(uint16_t buf[], uint16_t count);
+void sendMulti(JsonArray data, uint16_t count);
 
 void initIr()
 {
@@ -16,31 +17,77 @@ void initIr()
   irsend.begin();
 }
 
-bool sendIr(String command)
+void loadIr()
 {
-  if (command == "PWON") send(PWON);
-  else if (command == "PWOFF") send(PWOFF);
-  else if (command == "VOLUP") sendMulti(VOLUP, DENON_VOL_REPEAT);
-  else if (command == "VOLDOWN") sendMulti(VOLDOWN, DENON_VOL_REPEAT);
-  else if (command == "DVD") send(DVD);
-  else if (command == "TV") send(TV);
-  else if (command == "VCR") send(VCR);
-  else if (command == "MUTE") send(MUTE);
-  else if (command == "NIGHT") send(NIGHT);
-  else return false;
+  // check it exists
+  File file = SPIFFS.open("/ircodes.json", FILE_READ);
+  if (file.isDirectory()) {
+    Serial.println("[ IR ] ircodes.json not found");
+    file.close();
+    return;
+  }
+
+  // load json
+  DeserializationError error = deserializeJson(irCodes, file);
+  if (error) {
+    Serial.print("[ IR ] Error while parsing ircodes.json: ");
+    Serial.println(error.c_str());
+  }
+
+  // done with file
+  file.close();
+
+  // log
+  Serial.print("[ IR ] ");
+  Serial.print(irCodes["commands"].size());
+  Serial.println(" commands loaded");
+}
+
+bool sendIr(String commandId)
+{
+  // check it exists
+  if (!irCodes["commands"].containsKey(commandId)) {
+    Serial.println("[ IR ] No IR code for " + commandId);
+    return false;
+  }
+
+  // get the command
+  int repeat = 1;
+  JsonObject command = irCodes["commands"][commandId];
+  JsonArray data = command["data"].as<JsonArray>();
+  if (command.containsKey("repeat")) {
+    repeat = command["repeat"];
+  }
+  sendMulti(data, repeat);
+
+  // done
   return true;
 }
 
-void send(uint16_t buf[])
+void send(uint16_t buffer[])
 {
   digitalWrite(LED_BUILTIN, LOW);
-  irsend.sendRaw(buf, 95, 38);
+  irsend.sendRaw(buffer, 95, 38);
   digitalWrite(LED_BUILTIN, HIGH);
 }
 
-void sendMulti(uint16_t buf[], uint16_t count)
+void sendMulti(JsonArray data, uint16_t count)
 {
+  // log
+  Serial.print("[ IR ] Sending ");
+  Serial.print(data.size());
+  Serial.print(" bytes ");
+  Serial.print(count);
+  Serial.println(" time(s)");
+
+  // convert
+  uint16_t buffer[data.size()];
+  for (int i=0; i<data.size(); i++) {
+    buffer[i] = data[i].as<uint16_t>();
+  }
+
+  // do it
   for (int i = 0; i < count; i++) {
-    send(buf);
+    send(buffer);
   }
 }

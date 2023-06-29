@@ -9,12 +9,14 @@ void setup()
   // serial
   Serial.begin(115200);
   Serial.println("");
-
-  // ir stuff
-  initIr();
+  Serial.println("[MAIN] Starting");
 
   // start spiffs
   SPIFFS.begin(true);
+
+  // ir stuff
+  initIr();
+  loadIr();
 
   // connect to wifi
   connectWifi();

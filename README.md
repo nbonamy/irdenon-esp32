@@ -20,7 +20,7 @@ There are 4 ways to remote control older Denon AVR's (in my case Denon AVR 2308)
 
 - For controlling a IR led (3) connect the NPN transistor and IR led as described here:
 https://github.com/crankyoldgit/IRremoteESP8266/wiki#ir-sending
-- For controlling direct the "Room to Room" "REMOTE CONTROL": connect a 2 wire cable with a mono jack to ground and D2 on the ESP32. You can also use a mono headphone cable or a stereo headphone cable (just connect the 2 channels together).
+- For controlling direct the "Room to Room" "REMOTE CONTROL": connect a 2 wire cable with a mono jack to ground and D2 on the ESP32. You can also use a mono headphone cable or a stereo headphone cable (just connect the 2 channels together). [Example](https://www.amazon.com/gp/product/B0BXWLDW5W/ref=ppx_yo_dt_b_asin_title_o00_s00?ie=UTF8&psc=1). 
 ![remote jack](images/IMG_20200223_090247_1.jpg)
 
 ### Software
@@ -34,13 +34,16 @@ https://github.com/crankyoldgit/IRremoteESP8266/wiki#ir-sending
 You can get the IP address of the ESP32 from the serial output or from your router. If you configured mDNS, you should be able to use `irdenon.local` to access your ESP32.
 
 You can also send command directly through the API:
-```http://irdenon.local/api/send?action=PWON```
+```
+http://irdenon.local/api/send?action=PWON
+```
 
 ## Content update
 
 You can update contents without recompiling and restarting ESP32. This is valid for:
 - HTML page (`index.html`)
 - CSS styles (`styles.css`)
+- IR codes (`ircodes.json`)
 
 To upload the whole data folder:
 
@@ -56,6 +59,12 @@ curl -F "file=@index.html" irdenon.local/api/upload
 ```
 
 ## IR Codes
+
+IR codes can be dynamically reloaded by uploading an updated `ircodes.json` (in `data` folder):
+
+```
+curl -F "file=@ircodes.json" irdenon.local/api/upload
+```
 
 You can test the IR led by looking at it with any phone camera, or by replacing the IR led with a normal led. It should blink when you use the web interface.
 
