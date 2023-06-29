@@ -34,7 +34,7 @@ https://github.com/crankyoldgit/IRremoteESP8266/wiki#ir-sending
 You can get the IP address of the ESP32 from the serial output or from your router. If you configured mDNS, you should be able to use `irdenon.local` to access your ESP32.
 
 You can also send command directly through the API:
-```http://irdenon.local/api/do?action=PWON```
+```http://irdenon.local/api/send?action=PWON```
 
 ## Content update
 
