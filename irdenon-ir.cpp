@@ -84,6 +84,7 @@ void sendRaw(JsonArray data, uint16_t count)
     buffer[i] = data[i].as<uint16_t>();
   }
 
+  // send
   for (int i = 0; i < count; i++) {
     irsend.sendRaw(buffer, data.size(), 38);
   }
@@ -107,7 +108,7 @@ void sendMulti(String protocol, JsonArray data, uint16_t repeat)
   Serial.print(" bytes / ");
   Serial.print(data.size() * 8);
   Serial.print(" bits / ");
-  Serial.print(repeat);
+  Serial.print(repeat+1);
   Serial.println(" time(s)");
 
   // led
