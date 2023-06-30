@@ -5,10 +5,16 @@
 #include <IRsend.h>
 #include "irdenon-ir.h"
 
+#define PROTOCOL_RAW "raw"
+#define PROTOCOL_DENON "denon"
+#define PROTOCOL_PANASONIC64 "panasonic64"
+#define PROTOCOL_KASEIKYO "kaseikyo"
+#define PROTOCOL_DEFAULT PROTOCOL_RAW
+
 IRsend irsend(4); // D2
 DynamicJsonDocument irCodes(32768);
 
-void sendMulti(JsonArray data, uint16_t count);
+void sendMulti(String protocal, JsonArray data, uint16_t repeat);
 
 void initIr()
 {
@@ -53,41 +59,69 @@ bool sendIr(String commandId)
 
   // get the command
   int repeat = 1;
+  String protocol = PROTOCOL_DEFAULT;
   JsonObject command = irCodes["commands"][commandId];
   JsonArray data = command["data"].as<JsonArray>();
   if (command.containsKey("repeat")) {
     repeat = command["repeat"];
   }
-  sendMulti(data, repeat);
+  if (command.containsKey("protocol")) {
+    protocol = command["protocol"].as<String>();
+  }
+
+  // now send
+  sendMulti(protocol, data, repeat);
 
   // done
   return true;
 }
 
-void send(uint16_t buffer[])
+void sendRaw(JsonArray data, uint16_t repeat)
 {
-  digitalWrite(LED_BUILTIN, LOW);
-  irsend.sendRaw(buffer, 95, 38);
-  digitalWrite(LED_BUILTIN, HIGH);
-}
-
-void sendMulti(JsonArray data, uint16_t count)
-{
-  // log
-  Serial.print("[ IR ] Sending ");
-  Serial.print(data.size());
-  Serial.print(" bytes ");
-  Serial.print(count);
-  Serial.println(" time(s)");
-
   // convert
   uint16_t buffer[data.size()];
   for (int i=0; i<data.size(); i++) {
     buffer[i] = data[i].as<uint16_t>();
   }
 
-  // do it
-  for (int i = 0; i < count; i++) {
-    send(buffer);
+  for (int i = 0; i < repeat; i++) {
+    irsend.sendRaw(buffer, data.size(), 38);
   }
+}
+
+uint64_t dataToInt64(JsonArray data)
+{
+  uint64_t res = 0;
+  for (int i=0; i<data.size(); i++) {
+    uint64_t byte = data[i].as<uint64_t>();
+    res += byte << (7-i)*8;
+  }
+  return res;
+}
+
+void sendMulti(String protocol, JsonArray data, uint16_t repeat)
+{
+  // log
+  Serial.print("[ IR ] Sending " + protocol + ": ");
+  Serial.print(data.size());
+  Serial.print(" bytes / ");
+  Serial.print(data.size() * 8);
+  Serial.print(" bits / ");
+  Serial.print(repeat);
+  Serial.println(" time(s)");
+
+  // led
+  digitalWrite(LED_BUILTIN, LOW);
+
+  // do it
+  if (protocol == PROTOCOL_RAW) {
+    sendRaw(data, repeat);
+  } else if (protocol == PROTOCOL_DENON) {
+    irsend.sendDenon(dataToInt64(data), data.size()*8, repeat-1);
+  } else if (protocol == PROTOCOL_PANASONIC64 || protocol == PROTOCOL_KASEIKYO) {
+    irsend.sendPanasonic64(dataToInt64(data), data.size()*8, repeat-1);
+  }
+  
+  // led
+  digitalWrite(LED_BUILTIN, HIGH);
 }

@@ -1,0 +1,287 @@
+
+From
+https://svn.mikrokopter.de/websvn/filedetails.php?repname=Projects&path=%2FServo-Controlled+IR-Transmitter%2FSoftware%2Firmp.c&rev=903&peg=2217
+
+
+
+/*---------------------------------------------------------------------------------------------------------------------------------------------------
+ * irmp.c - infrared multi-protocol decoder, supports several remote control protocols
+ *
+ * Copyright (c) 2009-2010 Frank Meyer - frank(at)fli4l.de
+ *
+ * $Id: irmp.c,v 1.87 2011/01/18 13:02:15 fm Exp $
+ *
+ * ATMEGA88 @ 8 MHz
+ *
+ * Typical manufacturers:
+ *
+ * SIRCS      - Sony
+ * NEC        - NEC, Yamaha, Canon, Tevion, Harman/Kardon, Hitachi, JVC, Pioneer, Toshiba, Xoro, Orion, and many other Japanese manufacturers
+ * SAMSUNG    - Samsung
+ * SAMSUNG32  - Samsung
+ * MATSUSHITA - Matsushita
+ * KASEIKYO   - Panasonic, Denon & other Japanese manufacturers (members of "Japan's Association for Electric Home Application")
+ * RECS80     - Philips, Nokia, Thomson, Nordmende, Telefunken, Saba
+ * RC5        - Philips and other European manufacturers
+ * DENON      - Denon, Sharp
+ * RC6        - Philips and other European manufacturers
+ * APPLE      - Apple
+ * NUBERT     - Nubert Subwoofer System
+ * B&O        - Bang & Olufsen
+ * PANASONIC  - Panasonic (older, yet not implemented)
+ * GRUNDIG    - Grundig
+ * NOKIA      - Nokia
+ * SIEMENS    - Siemens, e.g. Gigaset M740AV
+ *
+ *---------------------------------------------------------------------------------------------------------------------------------------------------
+ *
+ *   SIRCS
+ *   -----
+ *
+ *   frame: 1 start bit + 12-20 data bits + no stop bit
+ *   data:  7 command bits + 5 address bits + 0 to 8 additional bits
+ *
+ *   start bit:                           data "0":                 data "1":                 stop bit:
+ *   -----------------_________           ------_____               ------------______
+ *       2400us         600us             600us 600us               1200us      600 us        no stop bit
+ *
+ *---------------------------------------------------------------------------------------------------------------------------------------------------
+ *
+ *   NEC + extended NEC
+ *   -------------------------
+ *
+ *   frame: 1 start bit + 32 data bits + 1 stop bit
+ *   data NEC:          8 address bits + 8 inverted address bits + 8 command bits + 8 inverted command bits
+ *   data extended NEC: 16 address bits + 8 command bits + 8 inverted command bits
+ *
+ *   start bit:                           data "0":                 data "1":                 stop bit:
+ *   -----------------_________           ------______              ------________________    ------______....
+ *       9000us        4500us             560us  560us              560us    1690 us          560us
+ *
+ *
+ *   Repetition frame:
+ *
+ *   -----------------_________------______  .... ~100ms Pause, then repeat
+ *       9000us        2250us   560us
+ *
+ *---------------------------------------------------------------------------------------------------------------------------------------------------
+ *
+ *   SAMSUNG
+ *   -------
+ *
+ *   frame: 1 start bit + 16 data(1) bits + 1 sync bit + additional 20 data(2) bits + 1 stop bit
+ *   data(1): 16 address bits
+ *   data(2): 4 ID bits + 8 command bits + 8 inverted command bits
+ *
+ *   start bit:                           data "0":                 data "1":                 sync bit:               stop bit:
+ *   ----------______________             ------______              ------________________    ------______________    ------______....
+ *    4500us       4500us                 550us  450us              550us    1450us           550us    4500us         550us
+ *
+ *---------------------------------------------------------------------------------------------------------------------------------------------------
+ *
+ *   SAMSUNG32
+ *   ----------
+ *
+ *   frame: 1 start bit + 32 data bits + 1 stop bit
+ *   data: 16 address bits + 16 command bits
+ *
+ *   start bit:                           data "0":                 data "1":                 stop bit:
+ *   ----------______________             ------______              ------________________    ------______....
+ *    4500us       4500us                 550us  450us              550us    1450us           550us
+ *
+ *---------------------------------------------------------------------------------------------------------------------------------------------------
+ *
+ *   MATSUSHITA
+ *   ----------
+ *
+ *   frame: 1 start bit + 24 data bits + 1 stop bit
+ *   data:  6 custom bits + 6 command bits + 12 address bits
+ *
+ *   start bit:                           data "0":                 data "1":                 stop bit:
+ *   ----------_________                  ------______              ------________________    ------______....
+ *    3488us     3488us                   872us  872us              872us    2616us           872us
+ *
+ *---------------------------------------------------------------------------------------------------------------------------------------------------
+ *
+ *   KASEIKYO
+ *   --------
+ *
+ *   frame: 1 start bit + 48 data bits + 1 stop bit
+ *   data:  16 manufacturer bits + 4 parity bits + 4 genre1 bits + 4 genre2 bits + 10 command bits + 2 id bits + 8 parity bits
+ *
+ *   start bit:                           data "0":                 data "1":                 stop bit:
+ *   ----------______                     ------______              ------________________    ------______....
+ *    3380us   1690us                     423us  423us              423us    1269us           423us
+ *
+ *---------------------------------------------------------------------------------------------------------------------------------------------------
+ *
+ *   RECS80
+ *   ------
+ *
+ *   frame: 2 start bits + 10 data bits + 1 stop bit
+ *   data:  1 toggle bit + 3 address bits + 6 command bits
+ *
+ *   start bit:                           data "0":                 data "1":                 stop bit:
+ *   -----_____________________           -----____________         -----______________       ------_______....
+ *   158us       7432us                   158us   4902us            158us    7432us           158us
+ *
+ *---------------------------------------------------------------------------------------------------------------------------------------------------
+ *
+ *   RECS80EXT
+ *   ---------
+ *
+ *   frame: 2 start bits + 11 data bits + 1 stop bit
+ *   data:  1 toggle bit + 4 address bits + 6 command bits
+ *
+ *   start bit:                           data "0":                 data "1":                 stop bit:
+ *   -----_____________________           -----____________         -----______________       ------_______....
+ *   158us       3637us                   158us   4902us            158us    7432us           158us
+ *
+ *---------------------------------------------------------------------------------------------------------------------------------------------------
+ *
+ *   RC5 + RC5X
+ *   ----------
+ *
+ *   RC5 frame:  2 start bits + 12 data bits + no stop bit
+ *   RC5 data:   1 toggle bit + 5 address bits + 6 command bits
+ *   RC5X frame: 1 start bit +  13 data bits + no stop bit
+ *   RC5X data:  1 inverted command bit + 1 toggle bit + 5 address bits + 6 command bits
+ *
+ *   start bit:              data "0":                data "1":
+ *   ______-----             ------______             ______------
+ *   889us 889us             889us 889us              889us 889us
+ *
+ *---------------------------------------------------------------------------------------------------------------------------------------------------
+ *
+ *   DENON
+ *   -----
+ *
+ *   frame: 0 start bits + 16 data bits + stop bit + 65ms pause + 16 inverted data bits + stop bit
+ *   data:  5 address bits + 10 command bits
+ *
+ *   Theory:
+ *
+ *   data "0":                 data "1":
+ *   ------________________    ------______________
+ *   275us       775us         275us   1900us
+ *
+ *   Practice:
+ *
+ *   data "0":                 data "1":
+ *   ------________________    ------______________
+ *   310us       745us         310us   1780us
+ *
+ *---------------------------------------------------------------------------------------------------------------------------------------------------
+ *
+ *   RC6
+ *   ---
+ *
+ *   RC6 frame:  1 start bit + 1 bit "1" + 3 mode bits + 1 toggle bit + 16 data bits + 2666 µs pause
+ *   RC6 data:   8 address bits + 8 command bits
+ *
+ *   start  bit               toggle bit "0":      toggle bit "1":     data/mode "0":      data/mode "1":
+ *   ____________-------      _______-------       -------_______      _______-------      -------_______
+ *      2666us    889us        889us  889us         889us  889us        444us  444us        444us  444us
+ *
+ *---------------------------------------------------------------------------------------------------------------------------------------------------
+ *
+ *   APPLE
+ *   -----
+ *
+ *   frame: 1 start bit + 32 data bits + 1 stop bit
+ *   data:  16 address bits + 11100000 + 8 command bits
+ *
+ *   start bit:                           data "0":                 data "1":                 stop bit:
+ *   -----------------_________           ------______              ------________________    ------______....
+ *       9000us        4500us             560us  560us              560us    1690 us          560us
+ *
+ *---------------------------------------------------------------------------------------------------------------------------------------------------
+ *
+ *   NUBERT (subwoofer system)
+ *   -------------------------
+ *
+ *   frame: 1 start bit + 10 data bits + 1 stop bit
+ *   data:  0 address bits + 10 command bits ?
+ *
+ *   start bit:                       data "0":                 data "1":                 stop bit:
+ *   ----------_____                  ------______              ------________________    ------______....
+ *    1340us   340us                  500us 1300us              1340us 340us              500us
+ *
+ *---------------------------------------------------------------------------------------------------------------------------------------------------
+ *
+ *   BANG_OLUFSEN
+ *   ------------
+ *
+ *   frame: 4 start bits + 16 data bits + 1 trailer bit + 1 stop bit
+ *   data:  0 address bits + 16 command bits
+ *
+ *   1st start bit:  2nd start bit:      3rd start bit:       4th start bit:
+ *   -----________   -----________       -----_____________   -----________
+ *   210us 3000us    210us 3000us        210us   15000us      210us 3000us
+ *
+ *   data "0":       data "1":           data "repeat bit":   trailer bit:         stop bit:
+ *   -----________   -----_____________  -----___________     -----_____________   -----____...
+ *   210us 3000us    210us   9000us      210us   6000us       210us   12000us      210us
+ *
+ *---------------------------------------------------------------------------------------------------------------------------------------------------
+ *
+ *   GRUNDIG
+ *   -------
+ *
+ *   packet:  1 start frame + 19,968ms pause + N info frames + 117,76ms pause + 1 stop frame
+ *   frame: 1 pre bit + 1 start bit + 9 data bits + no stop bit
+ *   pause between info frames: 117,76ms
+ *
+ *   data of start frame:   9 x 1
+ *   data of info  frame:   9 command bits
+ *   data of stop  frame:   9 x 1
+ *
+ *   pre bit:              start bit           data "0":            data "1":
+ *   ------____________    ------______        ______------         ------______             
+ *   528us  2639us         528us  528us        528us  528us         528us  528us
+ *
+ *---------------------------------------------------------------------------------------------------------------------------------------------------
+ *
+ *   NOKIA:
+ *   ------
+ *
+ *   Timing similar to Grundig, but 16 data bits:
+ *   frame: 1 pre bit + 1 start bit + 8 command bits + 8 address bits + no stop bit
+ *
+ *---------------------------------------------------------------------------------------------------------------------------------------------------
+ *
+ *   SIEMENS:
+ *   --------
+ *
+ *   SIEMENS frame:  1 start bit + 22 data bits + no stop bit
+ *   SIEMENS data:   13 address bits + 1 repeat bit + 7 data bits + 1 unknown bit
+ *
+ *   start  bit           data "0":            data "1":
+ *   -------_______       _______-------       -------_______
+ *    250us  250us         250us  250us         250us  250us
+ *
+ *---------------------------------------------------------------------------------------------------------------------------------------------------
+ *
+ *   PANASONIC (older protocol, yet not implemented, see also MATSUSHITA, timing very similar)
+ *   -----------------------------------------------------------------------------------------
+ *
+ *   frame: 1 start bit + 22 data bits + 1 stop bit
+ *   22 data bits = 5 custom bits + 6 data bits + 5 inverted custom bits + 6 inverted data bits
+ *
+ *   European version:      T = 456us
+ *   USA & Canada version:  T = 422us
+ *
+ *   start bit:                           data "0":                 data "1":                 stop bit:
+ *        8T            8T                 2T   2T                   2T      6T                2T
+ *   -------------____________            ------_____               ------_____________       ------_______....
+ *      3648us        3648us              912us 912us               912us    2736us           912us                (Europe)
+ *      3376us        3376us              844us 844us               844us    2532us           844us                (US)
+ *
+ *---------------------------------------------------------------------------------------------------------------------------------------------------
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *---------------------------------------------------------------------------------------------------------------------------------------------------
+ */
