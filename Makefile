@@ -6,7 +6,7 @@ SPEED = 460800
 # some stuff are platform dependent
 SYSTEM = $(shell sh -c "uname | tr '[:upper:]' '[:lower:]'")
 ifeq ($(SYSTEM),darwin)
-	PORT = /dev/cu.usbserial-1130
+	PORT = $(shell sh -c "ls /dev/cu.usbserial-*")
 endif
 
 all: build upload
