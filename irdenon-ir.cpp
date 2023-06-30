@@ -5,6 +5,10 @@
 #include <IRsend.h>
 #include "irdenon-ir.h"
 
+#ifndef LED_BUILTIN
+#define LED_BUILTIN 32
+#endif
+
 #define PROTOCOL_RAW "raw"
 #define PROTOCOL_DENON "denon"
 #define PROTOCOL_PANASONIC64 "panasonic64"
