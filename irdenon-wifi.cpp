@@ -11,6 +11,7 @@ void onWiFiDisconnect(WiFiEvent_t event, WiFiEventInfo_t info)
 {
   if (wifiConnected == 1) {
     Serial.println("[WIFI] Disconnected! Reconnecting");
+    wifiConnected = 0;
   }
 }
 
