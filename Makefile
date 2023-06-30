@@ -5,7 +5,7 @@ install:
 	arduino-cli lib install ArduinoJson
 
 build:
-	arduino-cli compile -b esp32:esp32:esp32 -v
+	arduino-cli compile -b esp32:esp32:esp32da -v
 
 upload:
-	arduino-cli upload -b esp32:esp32:esp32 -p /dev/ttyUSB0 -v
+	arduino-cli upload -b esp32:esp32:esp32da -p /dev/ttyUSB0 -v
