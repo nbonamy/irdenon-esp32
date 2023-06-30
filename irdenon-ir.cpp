@@ -4,10 +4,7 @@
 #include <IRremoteESP8266.h>
 #include <IRsend.h>
 #include "irdenon-ir.h"
-
-#ifndef LED_BUILTIN
-#define LED_BUILTIN 32
-#endif
+#include "irdenon-led.h"
 
 #define PROTOCOL_RAW "raw"
 #define PROTOCOL_DENON "denon"
@@ -22,8 +19,6 @@ void sendMulti(String protocal, JsonArray data, uint16_t repeat);
 
 void initIr()
 {
-  pinMode(LED_BUILTIN, OUTPUT);
-  digitalWrite(LED_BUILTIN, HIGH);
   irsend.begin();
 }
 
@@ -61,6 +56,9 @@ bool sendIr(String commandId)
     return false;
   }
 
+  // led
+  ledOn();
+
   // get the command
   int repeat = 0;
   String protocol = PROTOCOL_DEFAULT;
@@ -75,6 +73,9 @@ bool sendIr(String commandId)
 
   // now send
   sendMulti(protocol, data, repeat);
+
+  // led
+  ledOff();
 
   // done
   return true;
@@ -115,9 +116,6 @@ void sendMulti(String protocol, JsonArray data, uint16_t repeat)
   Serial.print(repeat+1);
   Serial.println(" time(s)");
 
-  // led
-  digitalWrite(LED_BUILTIN, LOW);
-
   // do it
   if (protocol == PROTOCOL_RAW) {
     sendRaw(data, repeat+1);
@@ -127,6 +125,4 @@ void sendMulti(String protocol, JsonArray data, uint16_t repeat)
     irsend.sendPanasonic64(dataToInt64(data), data.size()*8, repeat);
   }
   
-  // led
-  digitalWrite(LED_BUILTIN, HIGH);
 }

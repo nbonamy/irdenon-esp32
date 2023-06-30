@@ -2,6 +2,7 @@
 #include <WiFi.h>
 #include <ESPmDNS.h>
 #include "irdenon-wifi.h"
+#include "irdenon-led.h"
 #include "config.h"
 
 int wifiConnected = 0;
@@ -12,6 +13,7 @@ void onWiFiDisconnect(WiFiEvent_t event, WiFiEventInfo_t info)
   if (wifiConnected == 1) {
     Serial.println("[WIFI] Disconnected! Reconnecting");
     wifiConnected = 0;
+    ledOn();
   }
 }
 
@@ -32,6 +34,9 @@ void onWiFiGotIP(WiFiEvent_t event, WiFiEventInfo_t info)
       Serial.println("[MDNS] Responder failed");
     }
   #endif
+
+  // led
+  ledOff();
 
 }
 

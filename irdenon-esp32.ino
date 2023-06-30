@@ -1,6 +1,7 @@
 #include <Arduino.h>
 #include <SPIFFS.h>
 #include "irdenon-ir.h"
+#include "irdenon-led.h"
 #include "irdenon-http.h"
 #include "irdenon-wifi.h"
 
@@ -20,6 +21,10 @@ void setup()
 
   // connect to wifi
   connectWifi();
+
+  // led
+  initLed();
+  ledOff();
 
   // start server
   startHttpServer();
