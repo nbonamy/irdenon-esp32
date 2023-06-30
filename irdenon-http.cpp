@@ -1,5 +1,6 @@
 #include <Arduino.h>
 #include <SPIFFS.h>
+#include <WiFi.h>
 #include "irdenon-http.h"
 #include "irdenon-ir.h"
 
@@ -14,6 +15,12 @@ void handleApiSend();
 void startHttpServer() {
 
   Serial.println("[HTTP] Starting webserver");
+  server.on("/api/reboot", [] () {
+    Serial.println("[HTTP] Reboot command received");
+    server.send(200, "text/plain", "");
+    WiFi.disconnect();
+    ESP.restart();
+  });
   server.on("/api/send", handleApiSend);
   server.on("/api/upload", HTTP_POST, []() {
     server.send(200, "text/plain", "");
