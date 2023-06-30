@@ -58,7 +58,7 @@ bool sendIr(String commandId)
   }
 
   // get the command
-  int repeat = 1;
+  int repeat = 0;
   String protocol = PROTOCOL_DEFAULT;
   JsonObject command = irCodes["commands"][commandId];
   JsonArray data = command["data"].as<JsonArray>();
@@ -76,7 +76,7 @@ bool sendIr(String commandId)
   return true;
 }
 
-void sendRaw(JsonArray data, uint16_t repeat)
+void sendRaw(JsonArray data, uint16_t count)
 {
   // convert
   uint16_t buffer[data.size()];
@@ -84,7 +84,7 @@ void sendRaw(JsonArray data, uint16_t repeat)
     buffer[i] = data[i].as<uint16_t>();
   }
 
-  for (int i = 0; i < repeat; i++) {
+  for (int i = 0; i < count; i++) {
     irsend.sendRaw(buffer, data.size(), 38);
   }
 }
@@ -115,11 +115,11 @@ void sendMulti(String protocol, JsonArray data, uint16_t repeat)
 
   // do it
   if (protocol == PROTOCOL_RAW) {
-    sendRaw(data, repeat);
+    sendRaw(data, repeat+1);
   } else if (protocol == PROTOCOL_DENON) {
-    irsend.sendDenon(dataToInt64(data), data.size()*8, repeat-1);
+    irsend.sendDenon(dataToInt64(data), data.size()*8, repeat);
   } else if (protocol == PROTOCOL_PANASONIC64 || protocol == PROTOCOL_KASEIKYO) {
-    irsend.sendPanasonic64(dataToInt64(data), data.size()*8, repeat-1);
+    irsend.sendPanasonic64(dataToInt64(data), data.size()*8, repeat);
   }
   
   // led
