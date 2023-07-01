@@ -1,25 +1,28 @@
 #include <Arduino.h>
 #include <ArduinoJson.h>
 #include <SPIFFS.h>
-#include <IRremoteESP8266.h>
-#include <IRsend.h>
+#include <IRremote.h>
 #include "irdenon-ir.h"
 #include "irdenon-led.h"
 
 #define PROTOCOL_RAW "raw"
-#define PROTOCOL_DENON "denon"
-#define PROTOCOL_PANASONIC64 "panasonic64"
-#define PROTOCOL_KASEIKYO "kaseikyo"
+//#define PROTOCOL_DENON "denon"
+#define PROTOCOL_KASEIKYO "denon_kaseikyo"
 #define PROTOCOL_DEFAULT PROTOCOL_RAW
 
-IRsend irsend(4); // D2
+#ifndef IR_SEND_PIN
+#define IR_SEND_PIN 5
+#endif
+
+//IRsend irsend(IR_SEND_PIN);
 DynamicJsonDocument irCodes(32768);
 
-void sendMulti(String protocal, JsonArray data, uint16_t repeat);
+void sendMulti(String protocal, JsonArray data, uint repeat);
 
 void initIr()
 {
-  irsend.begin();
+  IrSender.begin(IR_SEND_PIN);
+  //irsend.begin();
 }
 
 void loadIr()
@@ -60,7 +63,7 @@ bool sendIr(String commandId)
   ledOn();
 
   // get the command
-  int repeat = 0;
+  uint repeat = 0;
   String protocol = PROTOCOL_DEFAULT;
   JsonObject command = irCodes["commands"][commandId];
   JsonArray data = command["data"].as<JsonArray>();
@@ -81,34 +84,10 @@ bool sendIr(String commandId)
   return true;
 }
 
-void sendRaw(JsonArray data, uint16_t count)
-{
-  // convert
-  uint16_t buffer[data.size()];
-  for (int i=0; i<data.size(); i++) {
-    buffer[i] = data[i].as<uint16_t>();
-  }
-
-  // send
-  for (int i = 0; i < count; i++) {
-    irsend.sendRaw(buffer, data.size(), 38);
-  }
-}
-
-uint64_t dataToInt64(JsonArray data)
-{
-  uint64_t res = 0;
-  for (int i=0; i<data.size(); i++) {
-    uint64_t byte = data[i].as<uint64_t>();
-    res += byte << (7-i)*8;
-  }
-  return res;
-}
-
-void sendMulti(String protocol, JsonArray data, uint16_t repeat)
+void sendRaw(JsonArray data, uint repeat)
 {
   // log
-  Serial.print("[ IR ] Sending " + protocol + ": ");
+  Serial.print("[ IR ] Sending raw: ");
   Serial.print(data.size());
   Serial.print(" bytes / ");
   Serial.print(data.size() * 8);
@@ -116,13 +95,57 @@ void sendMulti(String protocol, JsonArray data, uint16_t repeat)
   Serial.print(repeat+1);
   Serial.println(" time(s)");
 
+  // convert
+  uint16_t buffer[data.size()];
+  for (int i=0; i<data.size(); i++) {
+    buffer[i] = data[i].as<uint16_t>();
+  }
+
+  // send
+  for (int i=0; i<repeat+1; i++) {
+    IrSender.sendRaw(buffer, data.size(), 38);
+  }
+}
+
+void sendDenonKaseikyo(JsonArray data, uint repeat)
+{
+  // get data
+  uint16_t address = data[0];
+  uint8_t command = data[1];
+
+  // log
+  Serial.print("[ IR ] Sending DenonKaseikyo: ");
+  Serial.print("address=");
+  Serial.print(address);
+  Serial.print(", command=");
+  Serial.print(command);
+  Serial.print(" / ");
+  Serial.print(repeat+1);
+  Serial.println(" time(s)");
+
+  // send
+  IrSender.sendKaseikyo_Denon(address, command, repeat);
+}
+
+// uint64_t dataToInt64(JsonArray data)
+// {
+//   uint64_t res = 0;
+//   for (int i=0; i<data.size(); i++) {
+//     uint64_t byte = data[i].as<uint64_t>();
+//     res += byte << (7-i)*8;
+//   }
+//   return res;
+// }
+
+void sendMulti(String protocol, JsonArray data, uint repeat)
+{
   // do it
   if (protocol == PROTOCOL_RAW) {
-    sendRaw(data, repeat+1);
-  } else if (protocol == PROTOCOL_DENON) {
-    irsend.sendDenon(dataToInt64(data), data.size()*8, repeat);
-  } else if (protocol == PROTOCOL_PANASONIC64 || protocol == PROTOCOL_KASEIKYO) {
-    irsend.sendPanasonic64(dataToInt64(data), data.size()*8, repeat);
+    sendRaw(data, repeat);
+  // } else if (protocol == PROTOCOL_DENON) {
+  //   IrSender.sendDenon(dataToInt64(data), data.size()*8, repeat);
+  } else if (protocol == PROTOCOL_KASEIKYO) {
+    sendDenonKaseikyo(data, repeat);
   }
   
 }

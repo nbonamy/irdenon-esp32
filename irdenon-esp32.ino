@@ -33,4 +33,9 @@ void setup()
 void loop()
 {
   server.handleClient();
+  // if (Serial.available()) {
+  //   String command = Serial.readStringUntil('\n');
+  //   Serial.println("[MAIN] Received command: " + command);
+  //   if (command == "reboot") ESP.restart();
+  // }
 }

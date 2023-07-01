@@ -35,7 +35,7 @@ You can get the IP address of the ESP32 from the serial output or from your rout
 
 You can also send command directly through the API:
 ```
-http://irdenon.local/api/send?action=PWON
+http://irdenon.local/api/send?command=PWON
 ```
 
 ## Content update

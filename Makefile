@@ -13,11 +13,14 @@ all: build upload
 
 install:
 	arduino-cli core install esp32:esp32
-	arduino-cli lib install IRremoteESP8266
+	arduino-cli lib install IRremote
 	arduino-cli lib install ArduinoJson
 
 build:
 	arduino-cli compile -b esp32:esp32:esp32da -v
+
+clean:
+	arduino-cli compile --clean -b esp32:esp32:esp32da -v
 
 upload:
 	-killall -q arduino-cli

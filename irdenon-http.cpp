@@ -161,8 +161,8 @@ void handleFileUpload() {
 
 void handleApiSend()
 {
-  // check action button
-  String btn = server.arg("action");
+  // check command
+  String btn = server.arg("command");
   Serial.print("[HTTP] Command received: ");
   Serial.println(btn);
 

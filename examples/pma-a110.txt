@@ -1,0 +1,24 @@
+
+Power ON/OFF
+Protocol=Kaseikyo_Denon Address=0x17 Command=0x1 Raw-Data=0x700101703254 48E (7722) LSB first
+Send with: IrSender.sendKaseikyo_Denon(0x17, 0x1, <numberOfRepeats>);
+Protocol=Kaseikyo_Denon Address=0x17 Command=0x1 Repeat gap=75050us Raw-Data=0x700101703254 48 bits LSB first
+
+Volume UP
+Protocol=Kaseikyo_Denon Address=0xD17 Command=0x0 Raw-Data=0xA100D1703254 48 bits LSB first
+Send with: IrSender.sendKaseikyo_Denon(0xD17, 0x0, <numberOfRepeats>);
+
+Volume DOWN
+Protocol=Kaseikyo_Denon Address=0xC17 Command=0x0 Raw-Data=0xB100C1703254 48 bits LSB first
+Send with: IrSender.sendKaseikyo_Denon(0xC17, 0x0, <numberOfRepeats>);
+
+
+
+Command       | D0 | D1 | D2   | Address | Command 
+--------------+----+----+------+---------+---------
+Power ON/OFF  | 7H | 1H | 010H | 0x0017  | 0x01
+Volume UP     | 7H | 1H | 00DH | 0x0D17  | 0x00
+Volume DOWN   | 7H | 1H | 00CH | 0x0C17  | 0x00
+Power ON      | 7H | 1H | 05EH | 0x0E17  | 0x05
+Power OFF     | 7H | 1H | 05FH | 0x0F17  | 0x05
+

@@ -74,7 +74,7 @@ void connectWifi()
   // do it
   unsigned long start = millis();
   WiFi.begin(WIFI_SSID, WIFI_PSK);
-  WiFi.setTxPower(WIFI_POWER_8_5dBm);
+  //WiFi.setTxPower(WIFI_POWER_8_5dBm);
   while (true) {
 
     // get status
